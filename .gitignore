@@ -1,0 +1,6 @@
+build
+bin
+node_modules
+publish/artifacts
+.env
+.DS_Store

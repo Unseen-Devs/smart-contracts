@@ -1,6 +1,3 @@
-build
-bin
-node_modules
-publish/artifacts
+/node_modules
 .env
-.DS_Store
+package-lock.json

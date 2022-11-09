@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-
+console.log(process.env.NODE_URL);
 module.exports = {
 
     networks: {
@@ -13,9 +13,9 @@ module.exports = {
 
         production: {
             provider: () => new HDWalletProvider(process.env.PRIVATE_KEY, process.env.NODE_URL),
-            network_id: "*",
+            network_id: 5,
             gasPrice: process.env.GAS_PRICE,
-            skipDryRun: true
+            skipDryRun: true,
         }
     },
 

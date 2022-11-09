@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
@@ -15,7 +17,7 @@ interface IAkshun {
     function transferFrom(address from, address to, uint256 tokenId) external;
 }
 
-contract AkshunStore is PausableUpgradeable, ReentrancyGuardUpgradeable, Signable {
+contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable, Signable {
 
     using SafeERC20 for IERC20;
 

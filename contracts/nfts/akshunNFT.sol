@@ -35,8 +35,6 @@ contract Akshun is AccessControlEnumerable, ERC721Enumerable, ERC721Burnable  {
     }
 
     function mint(address to) public virtual returns (uint256) {
-        require(hasRole(MINTER_ROLE, _msgSender()), "Akshun NFT: must have minter role to mint");
-
         uint256 id = ++currentId;
 
         _mint(to, id);

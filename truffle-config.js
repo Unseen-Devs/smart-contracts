@@ -1,14 +1,14 @@
 require('dotenv').config();
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-console.log(process.env.NODE_URL);
+
 module.exports = {
 
     networks: {
         development: {
             host: "127.0.0.1",
             port: 9545,
-            network_id: "*"
+            network_id: "*",
         },
 
         production: {
@@ -16,6 +16,7 @@ module.exports = {
             network_id: 5,
             gasPrice: process.env.GAS_PRICE,
             skipDryRun: true,
+            from: '0xb5F4256272D8668Dd7d1E2Ac71B156557C4CB5D3'
         }
     },
 
@@ -29,14 +30,19 @@ module.exports = {
             settings: {
                 optimizer: {
                     enabled: true,
-                    runs: 200
+                    runs: 200,
                 }
             }
         }
     },
 
     db: {
-        enabled: false
-    }
+        enabled: false,
+    },
 
+    plugins: ['truffle-plugin-verify'],
+
+    api_keys: {
+        etherscan: process.env.ETHER_SCAN_API,
+    },
 };

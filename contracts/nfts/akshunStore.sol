@@ -6,9 +6,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import "./../common/Signable.sol";
 
 interface IAkshun {
@@ -19,19 +16,13 @@ interface IAkshun {
 
 contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable, Signable {
 
-    using SafeERC20 for IERC20;
-
-    event TreasuryUpdated(address treasury);
-
     event AkshunTierUpdated(uint256 typeId, uint256 price, uint256 totalSupply);
 
     event AskhunBought(uint256 typeId, uint256 price, address user, uint256[] akshunIds);
 
-    IERC20 public eth;
+    event WithdrawFunds(address owner, uint balance);
 
     IAkshun public akshun;
-
-    address public treasury;
 
     struct AkshunTier {
         uint256 price;
@@ -42,9 +33,11 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
     //akshun tier id => akshun tier information
     mapping(uint256 => AkshunTier) public akshunTiers;
 
+    mapping(address => uint256) public numAkshuns;
+
     mapping(address => uint256) public nonces;
 
-    function initialize(IERC20 _eth, IAkshun _akshun)
+    function initialize(IAkshun _akshun)
         public
         initializer
     {
@@ -52,25 +45,11 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
         __Pausable_init();
         __ReentrancyGuard_init();
 
-        eth = _eth;
         akshun = _akshun;
 
         address msgSender = _msgSender();
 
-        treasury = msgSender;
-
         _setSigner(msgSender);
-    }
-
-    function setTreasury(address _treasury)
-        public
-        onlyOwner
-    {
-        require(_treasury != address(0), "AskhunNFT: address is invalid");
-
-        treasury = _treasury;
-
-        emit TreasuryUpdated(_treasury);
     }
 
     function setSigner(address _signer)
@@ -95,7 +74,7 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
     }
 
 
-    function setAkshunTier(uint256 _typeId, uint256 _price, uint256 _totalSupply)
+    function setAkshunTier(uint256 _typeId, uint256 _price, uint256 _totalSupply)        
         public
         onlyOwner
     {
@@ -116,14 +95,15 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
         emit AkshunTierUpdated(_typeId, _price, _totalSupply);
     }
 
-    function buy(uint256 _typeId, uint256 _quantity)
+    function buy(uint256 _typeId, uint256 _quantity, bytes memory _signature)
         public
+        payable
         whenNotPaused
         nonReentrant
     {
-        _quantity = 1;
+        address msgSender = _msgSender();
 
-        require(_quantity > 0, "AskhunNFT: quantity is invalid");
+        require(_verifySignature(abi.encodePacked(msgSender, nonces[msgSender], block.chainid, this), _signature), "AskhunStore: signature is invalid");
 
         AkshunTier storage akshunTier = akshunTiers[_typeId];
 
@@ -137,11 +117,11 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
             _quantity = remain;
         }
 
-        address msgSender = _msgSender();
-
-        eth.safeTransferFrom(msgSender, treasury, akshunTier.price * _quantity);
+        nonces[msgSender]++;
 
         akshunTier.totalSold += _quantity;
+
+        numAkshuns[msgSender] += _quantity;
 
         uint256[] memory ids = new uint256[](_quantity);
 
@@ -150,5 +130,12 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
         }
 
         emit AskhunBought(_typeId, akshunTier.price, msgSender, ids);
+    }
+
+    function withdrawFunds() public onlyOwner {
+        uint balance = address(this).balance;
+        require(balance > 0, "Balance should be > 0.");
+        payable(msg.sender).transfer(balance);
+        emit WithdrawFunds(msg.sender, balance);
     }
 }

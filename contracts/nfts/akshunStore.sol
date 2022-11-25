@@ -37,6 +37,8 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
 
     mapping(address => uint256) public nonces;
 
+    address payable[] recipients;
+
     function initialize(IAkshun _akshun)
         public
         initializer
@@ -134,8 +136,23 @@ contract AkshunStore is OwnableUpgradeable, PausableUpgradeable, ReentrancyGuard
 
     function withdrawFunds() public onlyOwner {
         uint balance = address(this).balance;
+        
         require(balance > 0, "Balance should be > 0.");
+
         payable(msg.sender).transfer(balance);
+        
         emit WithdrawFunds(msg.sender, balance);
+    }    
+
+    function claimReward(address payable recipient, uint256 amount, bytes memory _signature) external {
+        address msgSender = _msgSender();
+
+        require(_verifySignature(abi.encodePacked(msgSender, nonces[msgSender], block.chainid, this), _signature), "AskhunStore: signature is invalid");
+
+        require(address(this).balance >= amount, "Address: insufficient balance");
+
+        (bool success, ) = recipient.call{ value: amount }("");
+
+        require(success, "Address: unable to send value, recipient may have reverted");
     }
 }
